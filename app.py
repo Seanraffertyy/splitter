@@ -1,56 +1,50 @@
-from flask import Flask, request, send_file
+from flask import Flask, render_template, request, send_file
 import fitz  # PyMuPDF
+import io
+import zipfile
 import os
-import tempfile
-from zipfile import ZipFile
 
 app = Flask(__name__)
 
+# Page groups with their corresponding output file name suffixes
+page_groups = [
+    ([46], "Acknowledgement of Receipt of Harassment-Free Standard"),
+    ([47], "Contractor Acknowledgement of The SLB Code of Conduct"),
+    ([48], "Contractor Information Security Standard Acknowledgement"),
+    ([49, 50], "Confidential Agreement (Non Disclosure)"),
+    ([51, 52, 53, 54, 55], "Non-Employee Access Agreement"),
+    ([56], "SLB Policies Contingent Worker Acknowledgment Form")
+]
+
 @app.route('/')
 def index():
-    return '''
-    <h2>PDF Signature Page Extractor</h2>
-    <p>Upload a PDF. This tool will extract pages 47, 48, 49, 51, 52, 53, 54, and 57.</p>
-    <form method="post" action="/split" enctype="multipart/form-data">
-        <input type="file" name="pdf" required><br><br>
-        <input type="submit" value="Extract Signature Pages">
-    </form>
-    '''
+    return render_template('index.html')
 
 @app.route('/split', methods=['POST'])
-def split_pdf():
-    pdf_file = request.files['pdf']
-    if not pdf_file:
-        return "No file uploaded."
+def split_pdfs():
+    uploaded_files = request.files.getlist("pdfs")
+    zip_buffer = io.BytesIO()
 
-    temp_dir = tempfile.mkdtemp()
-    input_path = os.path.join(temp_dir, pdf_file.filename)
-    pdf_file.save(input_path)
+    with zipfile.ZipFile(zip_buffer, "w") as zip_file:
+        for file in uploaded_files:
+            if file.filename == "":
+                continue
 
-    doc = fitz.open(input_path)
-    output_dir = os.path.join(temp_dir, "pages")
-    os.makedirs(output_dir)
+            original_name = os.path.splitext(file.filename)[0]
+            pdf = fitz.open(stream=file.read(), filetype="pdf")
 
-    # Pages to export (0-based index)
-    pages_to_export = [46, 47, 48, 50, 51, 52, 53, 56]
-    filenames = []
+            for pages, suffix in page_groups:
+                output_pdf = fitz.open()
+                for page_num in pages:
+                    if page_num < len(pdf):
+                        output_pdf.insert_pdf(pdf, from_page=page_num, to_page=page_num)
+                output_stream = io.BytesIO()
+                output_pdf.save(output_stream)
+                output_pdf.close()
+                output_stream.seek(0)
 
-    for i in pages_to_export:
-        if i < len(doc):
-            out_path = os.path.join(output_dir, f"page_{i+1}.pdf")
-            new_doc = fitz.open()
-            new_doc.insert_pdf(doc, from_page=i, to_page=i)
-            new_doc.save(out_path)
-            new_doc.close()
-            filenames.append(out_path)
+                output_filename = f"{original_name}_{suffix}.pdf"
+                zip_file.writestr(output_filename, output_stream.read())
 
-    zip_path = os.path.join(temp_dir, "signature_pages.zip")
-    with ZipFile(zip_path, 'w') as zipf:
-        for f in filenames:
-            zipf.write(f, os.path.basename(f))
-
-    doc.close()
-    return send_file(zip_path, as_attachment=True, download_name="signature_pages.zip")
-
-if __name__ == "__main__":
-    app.run(debug=True)
+    zip_buffer.seek(0)
+    return send_file(zip_buffer, as_attachment=True, download_name="split_documents.zip", mimetype='application/zip')
