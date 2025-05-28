@@ -60,7 +60,7 @@ def split_pdf():
             zipf.write(file_path, os.path.basename(file_path))
 
     doc.close()
-    return send_file(zip_path, as_attachment=True, download_name="signature_documents.zip")
+    return send_file(zip_path, as_attachment=True, download_name=f"{base_name} Documents.zip")
 
 if __name__ == "__main__":
     app.run(debug=True)
