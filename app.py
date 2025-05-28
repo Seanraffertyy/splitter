@@ -1,50 +1,67 @@
-from flask import Flask, render_template, request, send_file
+from flask import Flask, request, send_file
 import fitz  # PyMuPDF
-import io
-import zipfile
 import os
+import tempfile
+from zipfile import ZipFile
 
 app = Flask(__name__)
 
-# Page groups with their corresponding output file name suffixes
-page_groups = [
-    ([46], "Acknowledgement of Receipt of Harassment-Free Standard"),
-    ([47], "Contractor Acknowledgement of The SLB Code of Conduct"),
-    ([48], "Contractor Information Security Standard Acknowledgement"),
-    ([49, 50], "Confidential Agreement (Non Disclosure)"),
-    ([51, 52, 53, 54, 55], "Non-Employee Access Agreement"),
-    ([56], "SLB Policies Contingent Worker Acknowledgment Form")
-]
-
 @app.route('/')
 def index():
-    return render_template('index.html')
+    return '''
+    <h2>PDF Signature Page Extractor</h2>
+    <p>Upload a PDF. This tool will extract and group signature-related pages.</p>
+    <form method="post" action="/split" enctype="multipart/form-data">
+        <input type="file" name="pdf" required><br><br>
+        <input type="submit" value="Extract and Group Signature Pages">
+    </form>
+    '''
 
 @app.route('/split', methods=['POST'])
-def split_pdfs():
-    uploaded_files = request.files.getlist("pdfs")
-    zip_buffer = io.BytesIO()
+def split_pdf():
+    pdf_file = request.files['pdf']
+    if not pdf_file:
+        return "No file uploaded."
 
-    with zipfile.ZipFile(zip_buffer, "w") as zip_file:
-        for file in uploaded_files:
-            if file.filename == "":
-                continue
+    temp_dir = tempfile.mkdtemp()
+    input_path = os.path.join(temp_dir, pdf_file.filename)
+    pdf_file.save(input_path)
 
-            original_name = os.path.splitext(file.filename)[0]
-            pdf = fitz.open(stream=file.read(), filetype="pdf")
+    doc = fitz.open(input_path)
+    output_dir = os.path.join(temp_dir, "groups")
+    os.makedirs(output_dir)
 
-            for pages, suffix in page_groups:
-                output_pdf = fitz.open()
-                for page_num in pages:
-                    if page_num < len(pdf):
-                        output_pdf.insert_pdf(pdf, from_page=page_num, to_page=page_num)
-                output_stream = io.BytesIO()
-                output_pdf.save(output_stream)
-                output_pdf.close()
-                output_stream.seek(0)
+    # Page groupings (0-based index for PyMuPDF)
+    grouped_pages = {
+        "Acknowledgement of Receipt of Harassment-Free Standard": [46],
+        "Contractor Acknowledgement of The SLB Code of Conduct": [47],
+        "Contractor Information Security Standard Acknowledgement": [48],
+        "Confidential Agreement (Non Disclosure)": [49, 50],
+        "Non-Employee Access Agreement": [51, 52, 53, 54, 55],
+        "SLB Policies Contingent Worker Acknowledgment Form": [56],
+    }
 
-                output_filename = f"{original_name}_{suffix}.pdf"
-                zip_file.writestr(output_filename, output_stream.read())
+    base_name = os.path.splitext(pdf_file.filename)[0]
+    filenames = []
 
-    zip_buffer.seek(0)
-    return send_file(zip_buffer, as_attachment=True, download_name="split_documents.zip", mimetype='application/zip')
+    for title, pages in grouped_pages.items():
+        new_doc = fitz.open()
+        for i in pages:
+            if i < len(doc):
+                new_doc.insert_pdf(doc, from_page=i, to_page=i)
+        output_path = os.path.join(output_dir, f"{base_name} + {title}.pdf")
+        new_doc.save(output_path)
+        new_doc.close()
+        filenames.append(output_path)
+
+    zip_path = os.path.join(temp_dir, "signature_documents.zip")
+    with ZipFile(zip_path, 'w') as zipf:
+        for file_path in filenames:
+            zipf.write(file_path, os.path.basename(file_path))
+
+    doc.close()
+    return send_file(zip_path, as_attachment=True, download_name="signature_documents.zip")
+
+if __name__ == "__main__":
+    app.run(debug=True)
+
