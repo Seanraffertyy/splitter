@@ -49,7 +49,7 @@ def split_pdf():
         for i in pages:
             if i < len(doc):
                 new_doc.insert_pdf(doc, from_page=i, to_page=i)
-        output_path = os.path.join(output_dir, f"{base_name} + {title}.pdf")
+        output_path = os.path.join(output_dir, f"{base_name} {title}.pdf")
         new_doc.save(output_path)
         new_doc.close()
         filenames.append(output_path)
