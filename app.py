@@ -39,6 +39,7 @@ def split_pdf():
         "Confidential Agreement (Non Disclosure)": [49, 50],
         "Non-Employee Access Agreement": [51, 52, 53, 54, 55],
         "SLB Policies Contingent Worker Acknowledgment Form": [56],
+        "Contract Temporary Worker Acknowledgement": [57],
     }
 
     base_name = os.path.splitext(pdf_file.filename)[0]
