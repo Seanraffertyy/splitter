@@ -47,7 +47,7 @@ def split_pdf():
             "Contractor Information Security Standard Acknowledgement": [48],
             "Confidential Agreement (Non Disclosure)": [49, 50],
             "Non-Employee Access Agreement": [51, 52, 53, 54, 55],
-            "SLB Policies Contingent Worker Acknowledgment Form": [56],
+            "Candidate Declaration Form for Recruitment Fees": [56],
             "Contract Temporary Worker Acknowledgement": [57],
         }
 
