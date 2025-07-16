@@ -10,18 +10,23 @@ app = Flask(__name__)
 def index():
     return '''
     <h2>PDF Signature Page Extractor</h2>
-    <p>Upload a PDF. This tool will extract and group signature-related pages.</p>
+    <p>Upload a PDF and choose a split method:</p>
     <form method="post" action="/split" enctype="multipart/form-data">
         <input type="file" name="pdf" required><br><br>
-        <input type="submit" value="Extract and Group Signature Pages">
+        <button type="submit" name="mode" value="default">Split Default Signature Pages</button>
+        <button type="submit" name="mode" value="customer">Split Halliburton Docs</button>
     </form>
     '''
+
+
 
 @app.route('/split', methods=['POST'])
 def split_pdf():
     pdf_file = request.files['pdf']
     if not pdf_file:
         return "No file uploaded."
+
+    mode = request.form.get('mode', 'default')
 
     temp_dir = tempfile.mkdtemp()
     input_path = os.path.join(temp_dir, pdf_file.filename)
@@ -31,20 +36,36 @@ def split_pdf():
     output_dir = os.path.join(temp_dir, "groups")
     os.makedirs(output_dir)
 
-    # Page groupings (0-based index for PyMuPDF)
-    grouped_pages = {
-        "Acknowledgement of Receipt of Harassment-Free Standard": [46],
-        "Contractor Acknowledgement of The SLB Code of Conduct": [47],
-        "Contractor Information Security Standard Acknowledgement": [48],
-        "Confidential Agreement (Non Disclosure)": [49, 50],
-        "Non-Employee Access Agreement": [51, 52, 53, 54, 55],
-        "SLB Policies Contingent Worker Acknowledgment Form": [56],
-        "Contract Temporary Worker Acknowledgement": [57],
-    }
-
     base_name = os.path.splitext(pdf_file.filename)[0]
     filenames = []
 
+    # Default mode: original groupings
+    if mode == 'default':
+        grouped_pages = {
+            "Acknowledgement of Receipt of Harassment-Free Standard": [46],
+            "Contractor Acknowledgement of The SLB Code of Conduct": [47],
+            "Contractor Information Security Standard Acknowledgement": [48],
+            "Confidential Agreement (Non Disclosure)": [49, 50],
+            "Non-Employee Access Agreement": [51, 52, 53, 54, 55],
+            "SLB Policies Contingent Worker Acknowledgment Form": [56],
+            "Contract Temporary Worker Acknowledgement": [57],
+        }
+
+    # New mode: customer packet grouping
+    elif mode == 'customer':
+        grouped_pages = {
+            "Customer Drug, Alcohol and Contraband Addendum": [13],
+            "US Intellectual Property and Confidentiality Agreement": [14, 15, 16, 17],
+            "Arbitration Agreement": [51, 52, 53, 54, 55, 56],
+            "Emergency Contact Information Sheet": [57],
+            "Drug Abuse & Alcohol Screening Search Program Verification": [76],
+            "Motive Consent Form": [77, 78, 79],
+        }
+
+    else:
+        return "Invalid mode selected.", 400
+
+    # Generate PDFs
     for title, pages in grouped_pages.items():
         new_doc = fitz.open()
         for i in pages:
@@ -55,13 +76,14 @@ def split_pdf():
         new_doc.close()
         filenames.append(output_path)
 
-    zip_path = os.path.join(temp_dir, "signature_documents.zip")
+    zip_path = os.path.join(temp_dir, "split_documents.zip")
     with ZipFile(zip_path, 'w') as zipf:
         for file_path in filenames:
             zipf.write(file_path, os.path.basename(file_path))
 
     doc.close()
-    return send_file(zip_path, as_attachment=True, download_name=f"{base_name} Documents.zip")
+    return send_file(zip_path, as_attachment=True, download_name="split_documents.zip")
+
 
 if __name__ == "__main__":
     app.run(debug=True)
