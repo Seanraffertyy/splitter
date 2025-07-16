@@ -76,13 +76,15 @@ def split_pdf():
         new_doc.close()
         filenames.append(output_path)
 
-    zip_path = os.path.join(temp_dir, "split_documents.zip")
+    zip_name = f"{base_name}.zip"
+    zip_path = os.path.join(temp_dir, zip_name)
+
     with ZipFile(zip_path, 'w') as zipf:
         for file_path in filenames:
             zipf.write(file_path, os.path.basename(file_path))
 
     doc.close()
-    return send_file(zip_path, as_attachment=True, download_name="split_documents.zip")
+    return send_file(zip_path, as_attachment=True, download_name=zip_name)
 
 
 if __name__ == "__main__":
