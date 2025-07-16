@@ -13,7 +13,7 @@ def index():
     <p>Upload a PDF and choose a split method:</p>
     <form method="post" action="/split" enctype="multipart/form-data">
         <input type="file" name="pdf" required><br><br>
-        <button type="submit" name="mode" value="default">Split SLB</button>
+        <button type="submit" name="mode" value="default">Split SLB Docs</button>
         <button type="submit" name="mode" value="customer">Split Halliburton Docs</button>
     </form>
     '''
