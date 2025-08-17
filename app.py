@@ -45,10 +45,12 @@ def split_pdf():
             "Acknowledgement of Receipt of Harassment-Free Standard": [46],
             "Contractor Acknowledgement of The SLB Code of Conduct": [47],
             "Contractor Information Security Standard Acknowledgement": [48],
-            "Confidential Agreement (Non Disclosure)": [49, 50],
+            "Agreement Concerning Confidential Info IP US": [49, 50],
             "Non-Employee Access Agreement": [51, 52, 53, 54, 55],
             "Candidate Declaration Form for Recruitment Fees": [56],
             "Contract Temporary Worker Acknowledgement": [57],
+            "Addendum A Drug-Free Workplace Policy": [58],
+            "US Conflict of Interest": [59],
         }
 
     # New mode: customer packet grouping
