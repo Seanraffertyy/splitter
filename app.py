@@ -47,10 +47,11 @@ def split_pdf():
             "Contractor Information Security Standard Acknowledgement": [48],
             "Agreement Concerning Confidential Info IP US": [49, 50],
             "Non-Employee Access Agreement": [51, 52, 53, 54, 55],
-            "Candidate Declaration Form for Recruitment Fees": [56],
+            #"Candidate Declaration Form for Recruitment Fees": [56],
             "Contract Temporary Worker Acknowledgement": [57],
             "Addendum A Drug-Free Workplace Policy": [58],
             "US Conflict of Interest": [59],
+            "Candidate Declaration Form for Recruitment Fees": [59],
         }
 
     # New mode: customer packet grouping
