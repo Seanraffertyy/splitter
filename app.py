@@ -4,20 +4,107 @@ import os
 import tempfile
 from zipfile import ZipFile
 
+from email_generator import generate_emails
+from gmail_service import create_draft
+
 app = Flask(__name__)
+
+generated_emails = []
+
+@app.route("/email-tool")
+def email_tool():
+    return '''
+    <h2>Email Draft Generator</h2>
+
+    <form action="/upload-email" method="post" enctype="multipart/form-data">
+
+    Candidate Excel File:
+    <input type="file" name="candidates" required><br><br>
+
+    Recruiter Lookup File:
+    <input type="file" name="recruiters" required><br><br>
+
+    <button type="submit">Generate Preview</button>
+
+    </form>
+
+    <br><br>
+    <a href="/">Back to Tools</a>
+    '''
+
+@app.route("/upload-email", methods=["POST"])
+def upload_email():
+
+    global generated_emails
+
+    candidates = request.files["candidates"]
+    recruiters = request.files["recruiters"]
+
+    temp_dir = tempfile.mkdtemp()
+
+    candidate_path = os.path.join(temp_dir, candidates.filename)
+    recruiter_path = os.path.join(temp_dir, recruiters.filename)
+
+    candidates.save(candidate_path)
+    recruiters.save(recruiter_path)
+
+    generated_emails = generate_emails(candidate_path, recruiter_path)
+
+    html = "<h2>Email Preview</h2><table border=1>"
+    html += "<tr><th>To</th><th>CC</th><th>Subject</th></tr>"
+
+    for email in generated_emails:
+        html += f"<tr><td>{email['to']}</td><td>{email['cc']}</td><td>{email['subject']}</td></tr>"
+
+    html += "</table><br>"
+
+    html += '''
+    <form action="/create-drafts" method="post">
+        <button type="submit">Create Gmail Drafts</button>
+    </form>
+
+    <br><a href="/">Back</a>
+    '''
+
+    return html
+
+@app.route("/create-drafts", methods=["POST"])
+def create_drafts():
+
+    service = get_gmail_service()
+
+    for email in generated_emails:
+
+        create_draft(
+            service,
+            email["to"],
+            email["cc"],
+            email["subject"],
+            email["body"]
+        )
+
+    return "<h3>Drafts Created Successfully!</h3><a href='/'>Back to Home</a>"
 
 @app.route('/')
 def index():
     return '''
-    <h2>PDF Signature Page Extractor</h2>
-    <p>Upload a PDF and choose a split method:</p>
+    <h2>Internal Tools</h2>
+
+    <h3>PDF Signature Page Extractor</h3>
     <form method="post" action="/split" enctype="multipart/form-data">
         <input type="file" name="pdf" required><br><br>
         <button type="submit" name="mode" value="default">Split SLB Docs</button>
         <button type="submit" name="mode" value="customer">Split Halliburton Docs</button>
     </form>
-    '''
 
+    <br><hr><br>
+
+    <h3>Email Draft Generator</h3>
+    <p>Generate candidate email drafts from Excel.</p>
+    <a href="/email-tool">
+        <button>Open Email Generator</button>
+    </a>
+    '''
 
 
 @app.route('/split', methods=['POST'])

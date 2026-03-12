@@ -1,0 +1,20 @@
+Subject: Offer for {{ position }}
+
+Good morning {{ name }},
+
+We received the results from the SLB hiring event and SLB informed us that they would like to move forward with an offer. Please note, this is a "verbal" offer contingent upon you passing the background check, MVR, and pre-employment screens.
+
+Can you please let me know if you would like to accept the below offer from SLB? You would start out as a contractor through our company, UpTalent, with the goal of eventually rolling over to an SLB employee.
+
+Position: {{position}}
+Base Pay Pay Rate: {{ pay_rate }}
+Shift Differential: $3 (after you finish the 2 weeks of training on the day shift your shift differential will be added to your base pay rate)
+Shift: {{ shift }}
+Shift Hours: Monday - Thursday (5pm - 3:30am) some mandatory OT on Fridays
+
+If you would like to accept I will be sending you a "DISA Background Release Form" via RightSignature. We need this form in order to order your background check, MVR, and pre-employment screens. Please make sure to get this form completed ASAP
+
+Thank you!
+
+Kaylene Modica
+339-309-9659

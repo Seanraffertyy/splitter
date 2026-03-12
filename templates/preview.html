@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Email Preview</title>
+</head>
+
+<body>
+
+<h2>Email Preview</h2>
+
+<table border="1">
+
+<tr>
+<th>To</th>
+<th>CC</th>
+<th>Subject</th>
+</tr>
+
+{% for email in emails %}
+
+<tr>
+<td>{{ email.to }}</td>
+<td>{{ email.cc }}</td>
+<td>{{ email.subject }}</td>
+</tr>
+
+{% endfor %}
+
+</table>
+
+<br><br>
+
+<form action="/authorize">
+<button type="submit">Create Gmail Drafts</button>
+</form>
+
+</body>
+</html>
