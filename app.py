@@ -9,7 +9,61 @@ from gmail_service import create_draft
 
 app = Flask(__name__)
 
+app.secret_key = "super-secret-key"
+
+import pickle
+from google_auth_oauthlib.flow import Flow
+from flask import redirect, session
+from google.oauth2.credentials import Credentials
+from googleapiclient.discovery import build
+from google.auth.transport.requests import Request
+
+SCOPES = ['https://www.googleapis.com/auth/gmail.compose']
+
+
 generated_emails = []
+
+@app.route("/authorize")
+def authorize():
+
+    flow = Flow.from_client_secrets_file(
+        "credentials.json",
+        scopes=SCOPES,
+        redirect_uri="https://splitter-3swl.onrender.com/oauth2callback"
+    )
+
+    authorization_url, state = flow.authorization_url()
+
+    session["state"] = state
+
+    return redirect(authorization_url)
+
+@app.route("/oauth2callback")
+def oauth2callback():
+
+    state = session["state"]
+
+    flow = Flow.from_client_secrets_file(
+        "credentials.json",
+        scopes=SCOPES,
+        state=state,
+        redirect_uri="https://splitter-3swl.onrender.com/oauth2callback"
+    )
+
+    flow.fetch_token(authorization_response=request.url)
+
+    creds = flow.credentials
+
+    session["credentials"] = {
+        "token": creds.token,
+        "refresh_token": creds.refresh_token,
+        "token_uri": creds.token_uri,
+        "client_id": creds.client_id,
+        "client_secret": creds.client_secret,
+        "scopes": creds.scopes
+    }
+
+    return redirect("/create-drafts")
 
 @app.route("/email-tool")
 def email_tool():
@@ -59,19 +113,19 @@ def upload_email():
     html += "</table><br>"
 
     html += '''
-    <form action="/create-drafts" method="post">
-        <button type="submit">Create Gmail Drafts</button>
-    </form>
+    <form action="/authorize">
+    <button type="submit">Create Gmail Drafts</button>
+</form>
 
     <br><a href="/">Back</a>
     '''
 
     return html
 
-@app.route("/create-drafts", methods=["POST"])
+@app.route("/create-drafts")
 def create_drafts():
-
-    service = get_gmail_service()
+    creds = Credentials(**session["credentials"])
+    service = build("gmail", "v1", credentials=creds)
 
     for email in generated_emails:
 
